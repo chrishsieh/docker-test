@@ -16,6 +16,7 @@ services:
     #   - "9000:9000"
     volumes:
       - source:/var/www/html
+      - ./code/Config.php:/var/www/html/Include/Config.php
     env_file:
       - .env
     links:
