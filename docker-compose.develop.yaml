@@ -8,6 +8,8 @@ services:
     image: mariadb
     env_file:
       - .env
+    volumes:
+      - db-volume:/var/lib/mysql
   churchcrm:
     build:
       context: .
@@ -32,3 +34,4 @@ services:
       - source:/var/www/html
 volumes:
   source:
+  db-volume: null
