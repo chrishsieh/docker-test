@@ -28,3 +28,19 @@ $ docker-compose up -d
 NGINX is exposed on port 8080 of your local machine. If you point an external
 reverse proxy to this port, you can serve ChurchCRM off your own domain. We
 recommend setting up HTTPS.
+
+Vagrant
+-----------------
+
+Run vagrant with docker-compose up -d
+
+```bash
+vagrant up
+```
+
+Clean volumes
+
+```bash
+vagrant ssh
+$docker volume prune
+```
