@@ -1,0 +1,21 @@
+FROM codercom/code-server:1.621
+MAINTAINER ChurchCRM
+
+USER root
+
+ADD coder /usr/local/bin
+RUN set -x \
+	&& apt-get update \
+	&& export DEBIAN_FRONTEND=noninteractive && apt-get install --no-install-recommends --no-install-suggests --yes --quiet \
+		php \
+	&& deluser coder \
+	&& rm -rf /home/coder \
+	&& adduser --uid 82 --gecos '' --disabled-password coder \
+	&& echo "coder ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd \
+	&& chmod +X /usr/local/bin/coder
+
+USER coder
+RUN mkdir -p /home/coder/project
+WORKDIR /home/coder/project
+
+ENTRYPOINT ["dumb-init", "/usr/local/bin/coder"]

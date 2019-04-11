@@ -33,7 +33,9 @@ services:
     volumes:
       - source:/var/www/html
   coder:
-    image: codercom/code-server:1.621
+    build:
+      context: .
+      dockerfile: Dockerfile.coder
     volumes:
       - source:/home/coder/project
       - coder_data:/home/coder
