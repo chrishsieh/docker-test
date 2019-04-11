@@ -34,6 +34,15 @@ fix_dns_use_ipv6 = <<SCRIPT
     sed -i "s/^nameserver 8.8.4.4$/#nameserver 8.8.4.4/g" /etc/resolv.conf
 SCRIPT
 
+max_inotify = <<SCRIPT
+  cat << EOF > /etc/sysctl.conf
+net.ipv4.ip_forward=1
+net.ipv6.conf.all.forwarding=1
+fs.inotify.max_user_watches=524288
+EOF
+  sysctl -p||true
+SCRIPT
+
 ssh_path_init = <<SCRIPT
   cat << EOF > /home/bargee/.bash_profile
 if [ -f "/home/bargee/.bashrc" ]; then
@@ -85,6 +94,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision :shell, :inline => latest_docker_install_script
   config.vm.provision :shell, :inline => ssh_path_init
+  config.vm.provision :shell, :inline => max_inotify, run: "always"
   config.vm.provision :shell, :inline => fix_dns_use_ipv6, run: "always"
   config.vm.provision :shell, :inline => set_environment_variables, run: "always"
   config.vm.provision :shell, :inline => run_docker_compose, run: "always"

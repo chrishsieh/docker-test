@@ -32,6 +32,14 @@ services:
       - churchcrm
     volumes:
       - source:/var/www/html
+  coder:
+    image: codercom/code-server:1.621
+    volumes:
+      - source:/home/coder/project
+      - coder_data:/home/coder
+    ports:
+      - "443:8443"
 volumes:
   source:
   db-volume: null
+  coder_data: null
