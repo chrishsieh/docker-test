@@ -4,18 +4,35 @@ MAINTAINER ChurchCRM
 USER root
 
 ADD coder /usr/local/bin
+
 RUN set -x \
-	&& apt-get update \
-	&& export DEBIAN_FRONTEND=noninteractive && apt-get install --no-install-recommends --no-install-suggests --yes --quiet \
-		php \
 	&& deluser coder \
 	&& rm -rf /home/coder \
 	&& adduser --uid 82 --gecos '' --disabled-password coder \
 	&& echo "coder ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd \
 	&& chmod +X /usr/local/bin/coder
 
+RUN set -x \
+	&& apt-get update \
+	&& export DEBIAN_FRONTEND=noninteractive && apt-get install --no-install-recommends -y \
+		php bsdtar curl \
+	&& rm -rf /var/lib/apt/lists/*
+
 USER coder
+
 RUN mkdir -p /home/coder/project
+
+# Setup User Visual Studio Code Extension
+ENV VSCODE_EXTENSIONS "/home/coder/.local/share/code-server/extensions"
+
+# Setup PHP IntelliSense Extension
+RUN mkdir -p ${VSCODE_EXTENSIONS}/felixfbecker.php-intellisense-2.3.10 \
+	&& curl -JLs --retry 5 https://marketplace.visualstudio.com/_apis/public/gallery/publishers/felixfbecker/vsextensions/php-intellisense/2.3.10/vspackage | bsdtar --strip-components=1 -xf - -C ${VSCODE_EXTENSIONS}/felixfbecker.php-intellisense-2.3.10 extension
+
+# Setup Quick Task Extension
+RUN mkdir -p ${VSCODE_EXTENSIONS}/quicktask-3.5.4 \
+	&& curl -JLs --retry 5 https://marketplace.visualstudio.com/_apis/public/gallery/publishers/lkytal/vsextensions/quicktask/3.5.4/vspackage | bsdtar --strip-components=1 -xf - -C ${VSCODE_EXTENSIONS}/quicktask-3.5.4 extension
+
 WORKDIR /home/coder/project
 
 ENTRYPOINT ["dumb-init", "/usr/local/bin/coder"]
