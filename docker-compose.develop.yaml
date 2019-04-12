@@ -13,7 +13,7 @@ services:
   churchcrm:
     build:
       context: .
-      dockerfile: Dockerfile.churchcrm
+      dockerfile: Dockerfile.churchcrm-debian
     # ports:
     #   - "9000:9000"
     volumes:
