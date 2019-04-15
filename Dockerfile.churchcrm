@@ -5,14 +5,22 @@ ENV CHURCHCRM_VERSION 3.3.2
 
 # Install dependencies
 RUN apk update && \
-    apk add --no-cache libxml2-dev gettext-dev libpng-dev freetype-dev libjpeg-turbo-dev libzip-dev
+    apk add --no-cache libxml2-dev gettext-dev libpng-dev freetype-dev libjpeg-turbo-dev libzip-dev \
+    socat supervisor
+
 RUN docker-php-ext-install -j$(nproc) xml exif pdo_mysql gettext iconv mysqli zip && \
     docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ && \
-    docker-php-ext-install -j$(nproc) gd
+    docker-php-ext-install -j$(nproc) gd && \
+    rm -rf /etc/supervisor* && \
+    mkdir -p /etc/supervisor/conf.d && \
+    mkdir -p /var/log/supervisor
 
 # Configure PHP
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 ADD uploads.conf "$PHP_INI_DIR/conf.d/"
+ADD supervisord.conf /etc/supervisor/supervisord.conf
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+COPY docker-entrypoint.d/*.sh /docker-entrypoint.d/
 
 # Download and install ChurchCRM
 WORKDIR /tmp
@@ -24,3 +32,5 @@ RUN rm -fr ChurchCRM-${CHURCHCRM_VERSION}.zip churchcrm
 # Configure image
 WORKDIR /var/www/html
 VOLUME /var/www/html
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
