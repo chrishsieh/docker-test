@@ -3,45 +3,42 @@ MAINTAINER ChurchCRM
 
 ENV CHURCHCRM_VERSION 3.3.2
 
+ENV BUILD_DEPS \
+    cmake \
+    libicu-dev \
+    libfreetype6-dev \
+    libjpeg62-turbo-dev \
+    libzip-dev \
+    ca-certificates
+
+ENV RUN_DEPS \
+    gettext jq zip git unzip \
+    locales locales-all wget curl \
+    libfreetype6 libjpeg62-turbo \
+    libzip4 \
+    ca-certificates
+
 # Install dependencies
 RUN set -x \
-    && apt-get update \
-    && apt-get install -y \
-        gettext jq figlet \
-        zip git curl \
-        libpng16-16 libwebp6 libzip4 libfreetype6 libjpeg62-turbo \
-        libpng-dev libzip-dev \
-        libfreetype6-dev \
-        libjpeg62-turbo-dev \
-        libicu-dev locales locales-all wget \
-        libmemcachedutil2 libmemcached-dev \
-        libwebp-dev \
-    && apt-get install -y curl cmake \
-    && mkdir /tmp/libzip && cd /tmp/libzip && curl -sSLO https://libzip.org/download/libzip-1.5.1.tar.gz \
-    && tar zxf libzip-1.5.1.tar.gz && cd libzip-1.5.1/ && mkdir build && cd build && cmake ../ \
-    && make > /dev/null && make install \
-    && docker-php-ext-configure zip \
-        --with-libzip=/usr/local/lib/libzip.so \
+# ---- Installing Build dependencies ----
+    && DEBIAN_FRONTEND=noninteractive apt-get update -qq \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --no-install-recommends --no-install-suggests apt-utils \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --no-install-recommends --no-install-suggests \
+        ${BUILD_DEPS} \
 # ---- Installing PHP Extension: gd ----
-    && /usr/local/bin/docker-php-ext-configure gd --with-gd --with-webp-dir=/usr --with-jpeg-dir=/usr --with-png-dir=/usr --with-zlib-dir=/usr --with-freetype-dir=/usr --enable-gd-jis-conv \
+    && /usr/local/bin/docker-php-ext-configure gd --with-gd --with-jpeg-dir=/usr --with-freetype-dir=/usr --enable-gd-jis-conv \
     && NPROC=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || 1) \
     && docker-php-ext-install -j${NPROC} \
-        iconv intl gettext mysqli pdo_mysql exif gd zip \
+        gettext mysqli pdo_mysql exif gd zip \
     && (rm -rf /usr/local/lib/php/test/gd || true) \
     && (rm -rf /usr/local/lib/php/doc/gd || true) \
-    && pecl channel-update pecl.php.net \
-    && pecl install memcached \
-    && docker-php-ext-enable memcached \
-    && (rm -rf /usr/local/lib/php/test/memcached || true) \
-    && (rm -rf /usr/local/lib/php/doc/memcached || true) \
-    && apt-get purge -y \
-        libpng-dev \
-        libzip-dev \
-        libfreetype6-dev \
-        libicu-dev cmake \
-        libmemcached-dev \
-        libwebp-dev libxpm-dev \
-    && apt-get autoremove -y
+# ---- Removing Build dependencies ----
+    && DEBIAN_FRONTEND=noninteractive apt-get purge -qq -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false ${BUILD_DEPS} \
+# ---- Installing Runing dependencies ----
+    && DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --no-install-recommends --no-install-suggests ${RUN_DEPS} \
+    && DEBIAN_FRONTEND=noninteractive apt-get purge -qq -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false apt-utils \
+    && rm -rf /var/lib/apt/lists/* \
+    && update-ca-certificates
 
 # Configure PHP
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
@@ -50,10 +47,10 @@ ADD uploads.conf "$PHP_INI_DIR/conf.d/"
 # Download and install ChurchCRM
 WORKDIR /tmp
 RUN curl -LO https://github.com/ChurchCRM/CRM/releases/download/${CHURCHCRM_VERSION}/ChurchCRM-${CHURCHCRM_VERSION}.zip \
-	&& unzip ChurchCRM-${CHURCHCRM_VERSION}.zip \
-	&& mv churchcrm/* /var/www/html/ \
-	&& (mv churchcrm/.* /var/www/html/ || true) \
-	&& rm -fr ChurchCRM-${CHURCHCRM_VERSION}.zip churchcrm
+    && unzip -q ChurchCRM-${CHURCHCRM_VERSION}.zip \
+    && mv churchcrm/* /var/www/html/ \
+    && mv churchcrm/.[!.]* /var/www/html/ \
+    && rm -fr ChurchCRM-${CHURCHCRM_VERSION}.zip churchcrm
 
 # Configure image
 WORKDIR /var/www/html
